@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Amortization Calculator</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js" integrity="sha384-qKXV1j0HvMUeCBQ+QVp7JcfGl760yU08IQ+GpUo5hlbpg51QRiuqHAJz8+BrxE/N" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4 opacity-50 fw-bold">Mortgage Amortization Calculator</h1>
+        <div id="tooltip"></div>
+        <div id="pmitooltip"></div>
+        <form>
+            <div class="row">
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="loanAmount" class="form-label">Loan Amount</label>
+                    <input type="text" class="form-control" id="loanAmount" placeholder="Enter loan amount" value = "575000">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="principal" class="form-label">Principal</label>
+                    <input type="text" class="form-control" id="principal" placeholder="Enter principal" value="30000">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="interestRate" class="form-label">Annual Interest Rate</label>
+                    <input type="text" class="form-control" id="interestRate" step="0.1" placeholder="Enter annual interest rate"
+                    value="5">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="paymentsLeft" class="form-label">Payments Left on the Loan</label>
+                    <input type="number" class="form-control" id="paymentsLeft" 
+                    placeholder="Enter the number of payments left on the loan" value="360">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="amortizationGoal" class="form-label">Goal Number of Payments</label>
+                    <input type="number" class="form-control" id="amortizationGoal" 
+                    placeholder="Enter amortization goal - in how many payments do you want to finish the loan in?" value="180">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12 d-flex flex-column justify-content-between">
+                    <label for="pmi" class="form-label">Private Mortgage Insurance</label>
+                    <input type="number" class="form-control" id="pmi" 
+                    placeholder="How much do you spend in private mortgage insurance per month?" value="149">
+                </div>
+                <div class="mb-3 col-lg-2 col-md-4 col-sm-12">
+                    <button type="button" class="btn btn-calculate" onclick="amortizationCalculate()">Calculate</button>
+                </div>
+            </div>
+        </form>
+        <div class="row" id="written-results">
+            <div class="col-12">
+                <h3 class="fs-5 lh-lg fw-bold opacity-50 text-center pt-5">
+                    Here's a summary view of your plan to pay off your mortgage in <span class="goal-payments"></span> payments:
+                </h3>
+            </div>
+            <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    Your current minimum monthly payment:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="min-payment"></span>
+                </div>
+                <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    Monthly payment to reach your goal:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="goal-payment"></span>
+                </div>
+                <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    How much extra that amounts to each month:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="payment-difference"></span>
+            </div>
+        </div>
+        <div class="row mt-md-5" id="next-results">
+            <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    You'll finish paying PMI <span id="pmi-early"></span> and save:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="pmi-savings"></span>
+            </div>
+            <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    You'll save this much in interest:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="interest-savings"></span>
+            </div>
+            <div class="col-md-4 d-flex flex-column justify-content-between">
+                <h3 class="fs-6 lh-lg fw-light opacity-75">
+                    You'll pay this much early over the <span class="goal-payments"></span> goal scenario payments:<br />
+                </h3>
+                <span class="fs-2 fw-bold" id="extra-payment"></span>
+            </div>
+        </div>
+        <div class="row justify-content-center chart-container">
+            <div class="col-12">
+                <h3 class="fs-5 lh-lg fw-bold opacity-50 text-center pt-5">
+                    Here's a view of how your goal diverges from the minimum payment route:
+                </h3>
+                <div id="chart"></div>
+            </div>
+        </div>
+        <div class="py-5 row d-flex justify-content-center" id="legend">
+            <div class="col-md-4 col-sm-6">
+                <h3 class="fs-5 lh-lg fw-bold opacity-50">Minimum Payment Scenario</h3>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #ff856f;"></span>
+                    <span class="fs-6 lh-lg fw-light opacity-75">Cumulative Remaining Balance</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #FFA07A;"></span>
+                    <span class="fs-6 lh-lg fw-light opacity-75">Cumulative Interest Paid</span>
+                    </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+                <h3 class="fs-5 lh-lg fw-bold opacity-50">Goal Payment Scenario</h3>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #5CC085;"></span>
+                    <span class="fs-6 lh-lg fw-light opacity-75">Cumulative Remaining Balance</span>
+                </div>
+                    <div class="legend-item">
+                    <span class="legend-color" style="background-color: #8ED4B4;"></span>
+                    <span class="fs-6 lh-lg fw-light opacity-75">Cumulative Interest Paid</span>
+                </div>
+            </div>
+        </div>
+        <div class="row py-5" id="table-container">
+            <div class="col-12">
+            <table id="payment-plan-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="pay-head">Payment Number</th>
+                    <th colspan="4" class="min-head">Minimum payment scenario</th>
+                    <th colspan="4" class="goal-head">Goal payment scenario</th>
+                  </tr>
+                  <tr class="main_headers">
+                    <th class="min_table">Cumulative Payments</th>
+                    <th class="min_table">Remaining Balance</th>
+                    <th class="min_table">Cumulative Interest Paid</th>
+                    <th class="min_table">Equity (%)</th>
+                    <th class="goal_table">Cumulative Payments</th>
+                    <th class="goal_table">Remaining Balance</th>
+                    <th class="goal_table">Cumulative Interest Paid</th>
+                    <th class="goal_table">Equity (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+              <div class="mb-3 col-lg-3 col-md-4 col-sm-12">
+                <button type="button" class="btn btn-calculate" id="download-button">Download Amortization Schedule</button>
+              </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <script src="script.js"></script>
+    </body>
+</html>
